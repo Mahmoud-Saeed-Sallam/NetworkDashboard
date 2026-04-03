@@ -32,6 +32,21 @@
             border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px;
         }
 
+        /* شريط التحكم العلوي */
+        .top-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 20px; background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.1); sticky; top: 0; z-index: 100;
+        }
+        .nav-btn {
+            padding: 6px 15px; border-radius: 8px; border: 1px solid var(--primary);
+            background: transparent; color: white; cursor: pointer; font-size: 0.8rem;
+            font-family: 'Cairo'; transition: 0.3s;
+        }
+        .nav-btn:hover { background: var(--primary); color: #000; }
+        .btn-logout { border-color: #ff4d4d; color: #ff4d4d; }
+        .btn-logout:hover { background: #ff4d4d; color: white; }
+
         /* الحاوية والكروت المصغرة */
         .container {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -50,9 +65,8 @@
 
         .card img { width: 45px; height: 45px; margin-bottom: 8px; filter: drop-shadow(0 0 5px var(--primary)); }
         .card h3 { font-size: 0.85rem; margin: 5px 0; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card p { font-size: 0.7rem; margin: 3px 0; color: #bbb; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .card p { font-size: 0.7rem; margin: 3px 0; color: #bbb; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 3px; }
 
-        /* الأزرار المصغرة */
         .btn {
             width: 100%; padding: 6px; border-radius: 6px; border: none;
             font-weight: bold; cursor: pointer; margin-top: 8px; font-size: 0.75rem;
@@ -81,13 +95,15 @@
 </div>
 
 <div id="dashboard" style="display:none">
-    <h1 style="text-align:center; font-size: 1.5rem; color:var(--primary); margin: 20px 0;">NETWORK COMMAND CENTER</h1>
-    
-    <div style="text-align:center; margin-bottom: 15px;">
-        <span style="background:rgba(255,255,255,0.05); padding:5px 15px; border-radius:20px; font-size:0.8rem;">
-            الأجهزة النشطة: <span id="count" style="color:var(--primary)">0</span>
+    <div class="top-bar">
+        <button class="nav-btn btn-logout" onclick="logout()">خروج</button>
+        <span style="font-size:0.85rem; font-weight:bold; color:var(--primary)">
+            الأجهزة النشطة: <span id="count">0</span>
         </span>
+        <button class="nav-btn" onclick="refreshData()">تحديث</button>
     </div>
+
+    <h1 style="text-align:center; font-size: 1.5rem; color:var(--primary); margin: 20px 0;">NETWORK COMMAND CENTER</h1>
 
     <div class="container" id="cardsBox"></div>
     <div id="chartArea"><canvas id="usageChart"></canvas></div>
@@ -97,7 +113,6 @@
 let routerCreds = null;
 let myChart = null;
 
-// محاولة الدخول التلقائي عند تحميل الصفحة
 window.onload = () => {
     const saved = localStorage.getItem('router_auto_login');
     if (saved) {
@@ -116,6 +131,13 @@ function manualLogin() {
     showDashboard();
 }
 
+function logout() {
+    if(confirm("هل تريد الخروج ومسح بيانات الدخول؟")) {
+        localStorage.removeItem('router_auto_login');
+        location.reload(); // إعادة تحميل الصفحة للعودة لشاشة الدخول
+    }
+}
+
 function showDashboard() {
     document.getElementById('loginOverlay').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
@@ -124,6 +146,9 @@ function showDashboard() {
 }
 
 async function refreshData() {
+    const refreshBtn = document.querySelector('.nav-btn:not(.btn-logout)');
+    if(refreshBtn) refreshBtn.innerText = "جاري التحديث...";
+    
     try {
         const res = await fetch('/api/devices', {
             method: 'POST',
@@ -133,6 +158,8 @@ async function refreshData() {
         const devices = await res.json();
         renderUI(devices);
     } catch (e) { console.error("Refresh failed"); }
+    
+    if(refreshBtn) refreshBtn.innerText = "تحديث";
 }
 
 function renderUI(devices) {
@@ -153,7 +180,7 @@ function renderUI(devices) {
             <p>Data: ${d.DataUsage} GB</p>
             <button class="btn ${isB ? 'btn-unblock' : 'btn-block'}" 
                 onclick="toggleBlock('${d.MAC}', '${d.IP}', '${d.Device}', '${isB ? 'unblock' : 'block'}')">
-                ${isB ? 'إلغاء الحظر' : 'حظر نهائي'}
+                ${isB ? 'إلغاء الحظر' : 'طرد نهائي'}
             </button>
         `;
         box.appendChild(card);
