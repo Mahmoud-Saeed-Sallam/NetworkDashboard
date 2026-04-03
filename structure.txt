@@ -1,0 +1,8 @@
+﻿Path: F:\NetworkDashboard
+📄 requirements.txt [.txt]
+📄 server.py [.py]
+📄 structure.txt [.txt]
+📁 WebPage
+    📄 index.html [.html]
+    📁 assets
+    📁 data
